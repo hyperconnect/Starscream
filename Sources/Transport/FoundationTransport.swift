@@ -63,9 +63,12 @@ public class FoundationTransport: NSObject, Transport, StreamDelegate {
         guard let inStream = inputStream, let outStream = outputStream else {
                 return
         }
+        let settings = [kCFStreamPropertyShouldCloseNativeSocket: kCFBooleanTrue];
         inStream.delegate = self
+        inStream.setProperty(settings, forKey: kCFStreamPropertySSLSettings as Stream.PropertyKey)
         outStream.delegate = self
-    
+        outStream.setProperty(settings, forKey: kCFStreamPropertySSLSettings as Stream.PropertyKey)
+        
         onConnect?(inStream, outStream)
         
         isOpen = false
@@ -129,7 +132,7 @@ public class FoundationTransport: NSObject, Transport, StreamDelegate {
         guard let outputStream = outputStream else {
             return (nil, nil)
         }
-        let trust = outputStream.property(forKey: kCFStreamPropertySSLPeerTrust as Stream.PropertyKey) as! SecTrust?
+        var trust = outputStream.property(forKey: kCFStreamPropertySSLPeerTrust as Stream.PropertyKey) as! SecTrust?
         var domain = outputStream.property(forKey: kCFStreamSSLPeerName as Stream.PropertyKey) as! String?
         
         if domain == nil,
@@ -143,6 +146,7 @@ public class FoundationTransport: NSObject, Transport, StreamDelegate {
             if let peerDomain = String(bytes: peerName, encoding: .utf8), peerDomain.count > 0 {
                 domain = peerDomain
             }
+            trust = outputStream.property(forKey: kCFStreamPropertySSLPeerTrust as Stream.PropertyKey) as! SecTrust?
         }
         return (trust, domain)
         #endif
